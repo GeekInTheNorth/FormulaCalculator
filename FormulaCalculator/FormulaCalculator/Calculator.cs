@@ -35,11 +35,61 @@ namespace FormulaCalculator
                 expression = expression.Replace(expressionToReplace, evaluateResult.ToString("F10"));
             }
 
-            double returnValue = 0;
-            if (!double.TryParse(expression, out returnValue))
-                throw new FormulaEvaluationException("Unable to evaluate formula");
+            expression = ResolveMultiplicationAndDivision(expression);
 
-            return returnValue;
+            return ConvertToDouble(expression);
+        }
+
+        private string ResolveMultiplicationAndDivision(string expression)
+        {
+            var symbols = new[] { "*", "/" };
+            var operatorPosition = GetFirstIndex(expression, symbols);
+
+            while (operatorPosition != -1)
+            {
+                var numbers = "0123456789.";
+                var firstNumber = string.Empty;
+                var secondNumber = string.Empty;
+
+                for (var loop = operatorPosition - 1; loop >= 0; loop--)
+                {
+                    var character = expression[loop].ToString();
+                    if (numbers.Contains(character))
+                        firstNumber = character + firstNumber;
+                    else
+                        break;
+                }
+
+                for (var loop = operatorPosition + 1; loop < expression.Length; loop++)
+                {
+                    var character = expression[loop].ToString();
+                    if (numbers.Contains(character))
+                        secondNumber = secondNumber + character;
+                    else
+                        break;
+                }
+
+                var expressionToReplace = string.Format("{0}{1}{2}", firstNumber, expression[operatorPosition], secondNumber);
+                var operatorSymbol = expression[operatorPosition];
+                var operationResult = EvaluateOperation(ConvertToDouble(firstNumber), ConvertToDouble(secondNumber), operatorSymbol);
+
+                expression = expression.Replace(expressionToReplace, operationResult.ToString("F10"));
+                operatorPosition = GetFirstIndex(expression, symbols);
+            }
+
+            return expression;
+        }
+
+        private int GetFirstIndex(string expression, string[] mathOperators)
+        {
+            var index = -1;
+            foreach(var mathOperator in mathOperators)
+            {
+                if (expression.Contains(mathOperator) && (index == -1 || expression.IndexOf(mathOperator) < index))
+                    index = expression.IndexOf(mathOperator);
+            }
+
+            return index;
         }
 
         private int GetClosingBracePosition(string expression, int openingBracePosition)
@@ -56,6 +106,31 @@ namespace FormulaCalculator
             }
 
             return 0;
+        }
+
+        private double EvaluateOperation(double firstNumber, double secondNumber, char operatorSymbol)
+        {
+            switch (operatorSymbol)
+            {
+                case '*':
+                    return firstNumber * secondNumber;
+                case '/':
+                    if (secondNumber == 0)
+                        throw new DivideByZeroException();
+                    return firstNumber / secondNumber;
+                default:
+                    return 0;
+            }
+        }
+
+        private double ConvertToDouble(string value)
+        {
+            double outputValue = 0;
+
+            if (!double.TryParse(value, out outputValue))
+                throw new FormulaEvaluationException("Unable to evaluate formula");
+
+            return outputValue;
         }
     }
 }
