@@ -4,8 +4,6 @@ A general formula calculation library. I've used other libraries such as nCalc b
 ## TODO
 - Implement BODMAS Calculation
     - Order
-    - Addition
-    - Subtraction
 - Implement Rounding
 - Implement Min and Max functionality
 
@@ -14,3 +12,5 @@ A general formula calculation library. I've used other libraries such as nCalc b
     - Braces
     - Division
     - Multiplication
+    - Addition
+    - Subtraction	

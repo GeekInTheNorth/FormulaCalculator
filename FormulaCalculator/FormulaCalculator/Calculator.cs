@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using FormulaCalculator.Exceptions;
 
 namespace FormulaCalculator
@@ -36,6 +37,7 @@ namespace FormulaCalculator
             }
 
             expression = ResolveMultiplicationAndDivision(expression);
+            expression = ResolveAdditionAndSubtraction(expression);
 
             return ConvertToDouble(expression);
         }
@@ -43,7 +45,21 @@ namespace FormulaCalculator
         private string ResolveMultiplicationAndDivision(string expression)
         {
             var symbols = new[] { "*", "/" };
-            var operatorPosition = GetFirstIndex(expression, symbols);
+
+            return ResolveOperations(symbols, expression);
+        }
+
+        private string ResolveAdditionAndSubtraction(string expression)
+        {
+            var symbols = new[] { "+", "-" };
+
+            return ResolveOperations(symbols, expression);
+        }
+
+        private string ResolveOperations(string[] mathOperators, string expression)
+        {
+            expression = ResolveDoubleSymbols(expression);
+            var operatorPosition = GetFirstIndex(expression, mathOperators);
 
             while (operatorPosition != -1)
             {
@@ -56,6 +72,8 @@ namespace FormulaCalculator
                     var character = expression[loop].ToString();
                     if (numbers.Contains(character))
                         firstNumber = character + firstNumber;
+                    else if (loop == 0 && character.Equals("-"))
+                        firstNumber = character + firstNumber;
                     else
                         break;
                 }
@@ -65,6 +83,8 @@ namespace FormulaCalculator
                     var character = expression[loop].ToString();
                     if (numbers.Contains(character))
                         secondNumber = secondNumber + character;
+                    else if (loop == (operatorPosition + 1) && character.Equals("-"))
+                        secondNumber = character + secondNumber;
                     else
                         break;
                 }
@@ -74,7 +94,8 @@ namespace FormulaCalculator
                 var operationResult = EvaluateOperation(ConvertToDouble(firstNumber), ConvertToDouble(secondNumber), operatorSymbol);
 
                 expression = expression.Replace(expressionToReplace, operationResult.ToString("F10"));
-                operatorPosition = GetFirstIndex(expression, symbols);
+                expression = ResolveDoubleSymbols(expression);
+                operatorPosition = GetFirstIndex(expression, mathOperators);
             }
 
             return expression;
@@ -82,14 +103,13 @@ namespace FormulaCalculator
 
         private int GetFirstIndex(string expression, string[] mathOperators)
         {
-            var index = -1;
-            foreach(var mathOperator in mathOperators)
+            for (var index = 1; index < expression.Length; index++)
             {
-                if (expression.Contains(mathOperator) && (index == -1 || expression.IndexOf(mathOperator) < index))
-                    index = expression.IndexOf(mathOperator);
+                if (Array.IndexOf(mathOperators, expression.Substring(index, 1)) > -1)
+                    return index;
             }
 
-            return index;
+            return -1;
         }
 
         private int GetClosingBracePosition(string expression, int openingBracePosition)
@@ -118,6 +138,10 @@ namespace FormulaCalculator
                     if (secondNumber == 0)
                         throw new DivideByZeroException();
                     return firstNumber / secondNumber;
+                case '+':
+                    return firstNumber + secondNumber;
+                case '-':
+                    return firstNumber - secondNumber;
                 default:
                     return 0;
             }
@@ -131,6 +155,19 @@ namespace FormulaCalculator
                 throw new FormulaEvaluationException("Unable to evaluate formula");
 
             return outputValue;
+        }
+
+        /// <summary>
+        /// Two 'pluses' make a plus, two 'minuses' make a plus. A plus and a minus make a minus.
+        /// </summary>
+        private string ResolveDoubleSymbols(string expression)
+        {
+            while (expression.Contains("++")) expression = expression.Replace("++", "+");
+            while (expression.Contains("--")) expression = expression.Replace("--", "-");
+            while (expression.Contains("+-")) expression = expression.Replace("+-", "-");
+            while (expression.Contains("-+")) expression = expression.Replace("-+", "-");
+
+            return expression;
         }
     }
 }
