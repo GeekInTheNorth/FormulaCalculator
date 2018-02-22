@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using FormulaCalculator.Exceptions;
 
 namespace FormulaCalculator
@@ -36,10 +35,18 @@ namespace FormulaCalculator
                 expression = expression.Replace(expressionToReplace, evaluateResult.ToString("F10"));
             }
 
+            expression = ResolveOrder(expression);
             expression = ResolveMultiplicationAndDivision(expression);
             expression = ResolveAdditionAndSubtraction(expression);
 
             return ConvertToDouble(expression);
+        }
+
+        private string ResolveOrder(string expression)
+        {
+            var symbols = new[] { "^" };
+
+            return ResolveOperations(symbols, expression);
         }
 
         private string ResolveMultiplicationAndDivision(string expression)
@@ -142,6 +149,8 @@ namespace FormulaCalculator
                     return firstNumber + secondNumber;
                 case '-':
                     return firstNumber - secondNumber;
+                case '^':
+                    return Math.Pow(firstNumber, secondNumber);
                 default:
                     return 0;
             }

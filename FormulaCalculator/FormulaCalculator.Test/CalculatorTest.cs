@@ -139,6 +139,17 @@ namespace FormulaCalculator.Test
         }
 
         [Test]
+        [TestCase("2^2", 4)]
+        [TestCase("10^2", 100)]
+        [TestCase("10^3", 1000)]
+        [TestCase("2*10^3", 2000)]
+        [TestCase("(2*10)^3", 8000)]
+        public void GivenANumberToThePowerOfAnotherNumber_ThenTheCorrectValueShouldBeResolved(string expression, double expectedValue)
+        {
+            Assert.That(calculator.Calculate(expression), Is.EqualTo(expectedValue));
+        }
+
+        [Test]
         [TestCase("(9/4+4/5)/(2/5)*(1/4+7/2)", 28.59375)]
         public void ComplexFormulaExamples(string expression, double expectedValue)
         {
